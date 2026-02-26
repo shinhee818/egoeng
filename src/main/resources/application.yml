@@ -1,0 +1,86 @@
+spring:
+  profiles:
+    default: local
+  datasource:
+    url: jdbc:postgresql://localhost:5432/egoeng?options=-c%20max_parallel_workers_per_gather=0
+    username: root
+    password: root1234
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        show_sql: false
+
+  sql:
+    init:
+      mode: always
+      platform: postgres
+
+logging:
+  level:
+    root: info
+    sh.egoeng: info
+    org.hibernate.SQL: off
+    org.hibernate.type.descriptor.sql.BasicBinder: off
+    # Feign 로깅
+    feign: debug
+    org.springframework.cloud.openfeign: debug
+
+
+llm:
+  base-url: http://localhost:8000
+  chat-base-url: http://localhost:8000
+
+ocr:
+  api:
+    base-url: http://localhost:8000
+  server:
+    url: http://localhost:8000
+
+papago:
+  base-url: https://papago.apigw.ntruss.com
+  client-id: ${PAPAGO_CLIENT_ID}
+  client-secret: ${PAPAGO_CLIENT_SECRET}
+
+jwt:
+  secret: this-is-very-long-secret-key-at-least-32-bytes
+
+# Feign 클라이언트 설정
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 30000  # 연결 타임아웃: 30초
+        readTimeout: 60000     # 읽기 타임아웃: 60초
+  client-secret: abc
+  httpclient:
+    enabled: true
+    maxConnections: 200
+    maxConnectionsPerRoute: 50
+
+# 커스텀 OAuth2 설정 (우리의 Feign 클라이언트용)
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001
+
+frontend:
+  url: http://localhost:3000
+
+oauth2:
+  providers:
+    google:
+      client-id: ${GOOGLE_CLIENT_ID}
+      client-secret: ${GOOGLE_CLIENT_SECRET}
+      redirect-uri: http://localhost:3000/auth/oauth2/callback
+      token-url: https://oauth2.googleapis.com/token
+    kakao:
+      client-id: ${KAKAO_CLIENT_ID}
+      client-secret: ${KAKAO_CLIENT_SECRET}
+      redirect-uri: http://localhost:3000/auth/oauth2/callback
+      token-url: https://kauth.kakao.com/oauth/token
+
