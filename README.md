@@ -56,3 +56,53 @@
 </div>
 
 <br />
+
+## 🤔 기술적 이슈와 해결 과정
+
+### 1️⃣ OpenFeign을 이용한 외부 API 통신 (Papago 번역)
+
+- **Issue**: Papago API가 `application/x-www-form-urlencoded` 형식을 요구하나, 기본 Feign 설정으로는 JSON만 지원해 요청 실패.
+- **Decision**: `feign-form` 라이브러리 추가 및 커스텀 Feign 설정으로 해결.
+- **Implementation**: `PapagoFeignConfig`에서 `FormEncoder` 빈 설정, `@PostMapping`의 `consumes` 속성을 `APPLICATION_FORM_URLENCODED_VALUE`로 지정.
+- **Result**: Papago API 정상 연동, **외부 API별 Feign 설정 분리**로 확장성 확보.
+
+
+---
+
+
+### 2️⃣ QueryDSL을 이용한 동적 쿼리 생성
+- **Issue**: 카테고리·난이도·학습 상태 등 조건이 조합될 때마다 쿼리를 별도로 작성해야 해 코드 중복 심화.
+- **Decision**: QueryDSL `BooleanBuilder`로 조건을 동적으로 조합.
+- **Implementation**: `UserQuizQuerydslRepository` 구현, 조건 존재 시에만 `where` 절에 추가. `QuizDsl` DTO로 복잡한 쿼리 결과를 계층화된 구조로 변환.
+- **Result**: 필터 조건 **N개 조합을 단일 메서드**로 처리, 조건 추가 시 기존 코드 수정 없이 확장 가능.
+
+
+---
+
+### 3️⃣ LLM 스트리밍 응답 처리
+
+- **Issue**: Feign Client로 LLM 스트리밍 API 호출 시 `Flux<String>` 반환 불가. Feign은 블로킹 방식이라 SSE(Text Event Stream) 처리 불가.
+- **Decision**: 일반 단건 요청은 Feign 유지, 스트리밍 전용으로 WebClient 도입.
+- **Implementation**: 단건 채팅은 Feign Client로 처리(코드 단순성 유지), 스트리밍은 WebClient + `Flux<String>`으로 청크 단위 수신.
+- **Result**: 스트리밍 응답 정상 처리, **용도별 클라이언트 분리**로 각 방식의 장점 유지.
+
+---
+
+### 4️⃣ 다양한 퀴즈 유형 지원 (다형성 구조)
+
+
+- **Issue**: 단어 선택형·문장 배열형·번역형 등 퀴즈 유형마다 다른 데이터 구조를 하나의 API로 처리해야 함.
+- **Decision**: 퀴즈 타입별 `body` 객체를 분리하고 `QuizDsl`로 통일된 응답 구조 설계.
+- **Implementation**: `WordBody`, `SentenceArrangeBody`, `TranslateBody` 등 타입별 클래스 분리, 자바 다형성으로 런타임에 적절한 타입으로 역직렬화.
+- **Result**: 신규 퀴즈 타입 추가 시 기존 코드 수정 **0건** (body 클래스 1개 추가만으로 확장).
+
+---
+
+###  5️⃣ Google Cloud SQL 연동 및 Secret Manager 통합
+
+- **Issue**: 대량 알림 발송, LLM API 호출 등 응답 지연이 긴 작업을 동기 방식으로 처리 시 스레드 블로킹 발생.
+- **Decision**: WebFlux + WebClient로 논블로킹 비동기 처리, `@EnableScheduling`으로 백그라운드 작업 스케줄링.
+- **Implementation**: `WebClientConfig`에서 WebClient 빈 생성, 외부 API 호출 시 타임아웃(connectTimeout: 30s, readTimeout: 60s) 및 에러 핸들링 추가.
+- **Result**: 알림·LLM 호출 시 **스레드 블로킹 없이** 처리, 동시 요청 처리 가능.
+
+

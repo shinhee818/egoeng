@@ -38,7 +38,7 @@ public class LlmChatClientService {
 
     public Flux<String> streamChat(ChatAskRequest serviceRequest) {
         ChatRequest feignRequest = serviceRequest.toFeignRequest();
-        log.debug("Starting SSE stream for user: {}", feignRequest.getUserId());
+        log.debug("Starting stream for user: {}", feignRequest.getUserId());
         
         return webClient.post()
                 .uri(llmBaseUrl + "/api/chat/stream")
